@@ -21,7 +21,7 @@ Ext.define('CustomApp', {
     getOpenedDefects:function(){
         Ext.create('Rally.data.lookback.SnapshotStore', {
             find: {'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'State':'Open','_PreviousValues.State':'Submitted','_ValidFrom': {'$gte':'2015-08-01T06:00:00.000Z','$lte':'2015-09-01T05:59:59.000Z'}},
-            fetch    : ['ObjectID','_ValidFrom','_ValidTo','FormattedID','Project','State','_PreviousValues.State','Tags'],
+            fetch    : ['ObjectID','_ValidFrom','_ValidTo','FormattedID','State','Project','_PreviousValues.State','Tags'],
             hydrate: ['State','_PreviousValues.State'],
             listeners: {
                 load: this.onOpenedSnapshotsLoaded, 
@@ -53,7 +53,7 @@ Ext.define('CustomApp', {
                 'ObjectID':defect.ObjectID,
                 'FormattedID':defect.FormattedID,
                 'OpenedOn':defect._ValidFrom,
-                'State':defect.State
+                //'State':defect.State
             });
         },this);
         
@@ -72,8 +72,8 @@ Ext.define('CustomApp', {
     },
     doubleCheckTagOid:function(oid){
         Ext.create('Rally.data.lookback.SnapshotStore', {
-            fetch: ['ObjectID','FormattedID','State','Project','Tags'],
             find: {'ObjectID':oid,'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'__At':'current'},
+            fetch: ['ObjectID','FormattedID','State','Project','Tags'],
             hydrate: ['Project','State']
         }).load({
                 callback: function(records, operation, success) {
@@ -83,8 +83,7 @@ Ext.define('CustomApp', {
                             this.openedDefects.push({
                                 'ObjectID':records[0].data.ObjectID,
                                 'FormattedID':records[0].data.FormattedID,
-                                'OpenedOn':records[0].data._ValidFrom,
-                                'State':records[0].data.State
+                                'OpenedOn':records[0].data._ValidFrom
                             });
                         }
                         else{
@@ -114,13 +113,16 @@ Ext.define('CustomApp', {
             showPagingToolbar: true,
             editable: false,
             store: Ext.create('Rally.data.custom.Store', {
-                data: this.openedDefects
+                data: this.openedDefects,
+                sorter:[{
+                    property: 'FormattedID',
+                    direction: 'DESC'
+                }]
             }),
             columnCfgs: [
-                {text: 'ObjectID',dataIndex: 'ObjectID'},
                 {text: 'FormattedID',dataIndex: 'FormattedID'},
-                {text: 'Opened On',dataIndex: 'OpenedOn'},
-                {text: 'State',dataIndex: 'State'}
+                {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'State set to Open',dataIndex: 'OpenedOn', flex:1}
             ],
             width: 500
         });
