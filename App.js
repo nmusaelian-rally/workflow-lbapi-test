@@ -7,26 +7,12 @@ Ext.define('CustomApp', {
     assignedDefects:[],
     numberOfAssignedDefectsBeforeTagged:0,
     launch: function() {
-        this.getDefectsThatWereMoved();
+        this.getDefectsAssignedToTeam();
     },
-    getDefectsThatWereMoved:function(){
+    getDefectsAssignedToTeam:function(){
         Ext.create('Rally.data.lookback.SnapshotStore', {
             fetch    : ['ObjectID','_ValidFrom','_ValidTo','FormattedID','Project','_PreviousValues.Project','Tags'],
-            find: {"_ValidFrom": {"$gte":"2015-08-01T06:00:00.000Z","$lte":"2015-09-01T05:59:59.000Z"}},
-            filters  : [
-            {
-                property : '_TypeHierarchy',
-                value    : 'Defect'
-            },
-            {
-                property : '_ProjectHierarchy',
-                value: this.projectOid
-            },
-            {
-                property : '_PreviousValues.Project',
-                value: this.projectOid
-            }
-            ],
+            find: {'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'_PreviousValues.Project':this.projectOid,'_ValidFrom': {'$gte':'2015-08-01T06:00:00.000Z','$lte':'2015-09-01T05:59:59.000Z'}},
             hydrate: ['Project','_PreviousValues.Project'],
             listeners: {
                 load: this.onSnapshotsLoaded, 
@@ -73,7 +59,6 @@ Ext.define('CustomApp', {
             for(var i=this.numberOfAssignedDefectsBeforeTagged-1; i>=0;i--){
                 this.doubleCheckTagOid(idsOfDefectsAssignedBeforeTag[i]);
             }
-            
         }
     },
     checkTagOid:function(tags){
@@ -85,17 +70,7 @@ Ext.define('CustomApp', {
     doubleCheckTagOid:function(oid){
         Ext.create('Rally.data.lookback.SnapshotStore', {
             fetch: ['ObjectID','FormattedID','Project','Tags'],
-            find: {"ObjectID":oid, "__At":"current"},
-            filters  : [
-            {
-                property : '_TypeHierarchy',
-                value    : 'Defect'
-            },
-            {
-                property : '_ProjectHierarchy',
-                value: this.projectOid
-            }
-            ],
+            find: {'ObjectID':oid,'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'__At':'current'},
             hydrate: ['Project'],
         }).load({
                 callback: function(records, operation, success) {
@@ -116,14 +91,12 @@ Ext.define('CustomApp', {
                         }
                         else{console.log('no cv tag');}
                     }
-                    
                 },
                 scope: this,
                 params : {
                     compress : true,
                     removeUnauthorizedSnapshots : true
                 }
-            
         });
         
     },
@@ -137,18 +110,10 @@ Ext.define('CustomApp', {
                 data: this.assignedDefects,
             }),
             columnCfgs: [
-                {
-                    text: 'ObjectID',dataIndex: 'ObjectID'
-                },
-                {
-                    text: 'FormattedID',dataIndex: 'FormattedID'
-                },
-                {
-                    text: 'Assigned On',dataIndex: 'AssignedOn'
-                },
-                {
-                    text: 'Assigned To',dataIndex: 'AssignedTo'
-                }
+                {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'FormattedID',dataIndex: 'FormattedID'},
+                {text: 'Assigned On',dataIndex: 'AssignedOn'},
+                {text: 'Assigned To',dataIndex: 'AssignedTo'}
             ],
             width: 500
         });
