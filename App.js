@@ -43,12 +43,12 @@ Ext.define('CustomApp', {
         //this.assignedDefects are defects that were moved out of Engineering to any of its child projects
         var defects = [];
         var idsOfDefectsAssignedBeforeTag = []; //to double check
-        console.log('onSnapshotsLoaded', records.length); //44
+        console.log('onSnapshotsLoaded', records.length); 
         _.each(records, function(record){
             console.log('fid: ',record.data.ObjectID, record.data.FormattedID);
         });
         _.each(records, function(record){
-            if (record.data.Tags.length > 0) { //there are 37 if those
+            if (record.data.Tags.length > 0) { 
                 if(this.checkTagOid(record.data.Tags)){
                     defects.push(record.data)
                 }
@@ -83,7 +83,6 @@ Ext.define('CustomApp', {
         return isThere;
     },
     doubleCheckTagOid:function(oid){
-        //console.log('oid', oid, 'indexOfDefectToVerify', indexOfDefectToVerify);
         Ext.create('Rally.data.lookback.SnapshotStore', {
             fetch: ['ObjectID','FormattedID','Project','Tags'],
             find: {"ObjectID":oid, "__At":"current"},
@@ -100,7 +99,6 @@ Ext.define('CustomApp', {
             hydrate: ['Project'],
         }).load({
                 callback: function(records, operation, success) {
-                    //console.log('indexOfDefectToVerify inside callback', indexOfDefectToVerify);
                     console.log('this.numberOfAssignedDefectsBeforeTagged inside callback', this.numberOfAssignedDefectsBeforeTagged);
                     if (records[0].data.Tags.length>0) {
                         if(this.checkTagOid(records[0].data.Tags)){
@@ -112,7 +110,6 @@ Ext.define('CustomApp', {
                                 'AssignedTo':records[0].data.Project.Name
                             });
                             this.numberOfAssignedDefectsBeforeTagged--;
-                            //if (indexOfDefectToVerify === 0) {
                             if (this.numberOfAssignedDefectsBeforeTagged === 0) {
                                 this.makeGrid();
                             }
