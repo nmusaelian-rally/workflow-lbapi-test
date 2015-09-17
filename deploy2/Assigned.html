@@ -112,13 +112,17 @@
             showPagingToolbar: true,
             editable: false,
             store: Ext.create('Rally.data.custom.Store', {
-                data: this.assignedDefects
+                data: this.assignedDefects,
+                sorter:[{
+                    property: 'FormattedID',
+                    direction: 'DESC'
+                }]
             }),
             columnCfgs: [
-                {text: 'ObjectID',dataIndex: 'ObjectID'},
                 {text: 'FormattedID',dataIndex: 'FormattedID'},
-                {text: 'Assigned On',dataIndex: 'AssignedOn'},
-                {text: 'Assigned To',dataIndex: 'AssignedTo'}
+                {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'Assigned To',dataIndex: 'AssignedTo'},
+                {text: 'Assigned On',dataIndex: 'AssignedOn',flex:1}
             ],
             width: 500
         });

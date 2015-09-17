@@ -1,21 +1,20 @@
-
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     projectOid:23112780161,
     tagOid:21580021389,
-    openedDefects:[],
-    numberOfDefectsOpenedBeforeTagged:0,
+    assignedDefects:[],
+    numberOfAssignedDefectsBeforeTagged:0,
     launch: function() {
-        this.getOpenedDefects();
+        this.getDefectsAssignedToTeam();
     },
-    getOpenedDefects:function(){
+    getDefectsAssignedToTeam:function(){
         Ext.create('Rally.data.lookback.SnapshotStore', {
-            find: {'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'State':'Open','_PreviousValues.State':'Submitted','_ValidFrom': {'$gte':'2015-08-01T06:00:00.000Z','$lte':'2015-09-01T05:59:59.000Z'}},
-            fetch    : ['ObjectID','_ValidFrom','_ValidTo','FormattedID','Project','State','_PreviousValues.State','Tags'],
-            hydrate: ['State','_PreviousValues.State'],
+            fetch    : ['ObjectID','_ValidFrom','_ValidTo','FormattedID','Project','_PreviousValues.Project','Tags'],
+            find: {'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'_PreviousValues.Project':this.projectOid,'_ValidFrom': {'$gte':'2015-08-01T06:00:00.000Z','$lte':'2015-09-01T05:59:59.000Z'}},
+            hydrate: ['Project','_PreviousValues.Project'],
             listeners: {
-                load: this.onOpenedSnapshotsLoaded, 
+                load: this.onSnapshotsLoaded, 
                 scope: this
             }
             }).load({
@@ -25,9 +24,10 @@ Ext.define('CustomApp', {
                 }
             });
     },
-    onOpenedSnapshotsLoaded:function(store, records){
+    onSnapshotsLoaded:function(store, records){
+        //this.assignedDefects are defects that were moved out of Engineering to any of its child projects
         var defects = [];
-        var idsOfDefectsOpenedBeforeTag = []; //to double check 
+        var idsOfDefectsAssignedBeforeTag = []; //to double check 
         _.each(records, function(record){
             if (record.data.Tags.length > 0) { 
                 if(this.checkTagOid(record.data.Tags)){
@@ -35,23 +35,23 @@ Ext.define('CustomApp', {
                 }
             }
             else{
-                idsOfDefectsOpenedBeforeTag.push(record.data.ObjectID);
+                idsOfDefectsAssignedBeforeTag.push(record.data.ObjectID);
             }
         },this);
         
         _.each(defects, function(defect){
-            this.openedDefects.push({
+            this.assignedDefects.push({
                 'ObjectID':defect.ObjectID,
                 'FormattedID':defect.FormattedID,
-                'OpenedOn':defect._ValidFrom,
-                'State':defect.State
+                'AssignedOn':defect._ValidFrom,
+                'AssignedTo':defect.Project.Name
             });
         },this);
         
-        if (idsOfDefectsOpenedBeforeTag.length > 0) {
-            this.numberOfDefectsOpenedBeforeTagged = idsOfDefectsOpenedBeforeTag.length;
-            for(var i=this.numberOfDefectsOpenedBeforeTagged-1; i>=0;i--){
-                this.doubleCheckTagOid(idsOfDefectsOpenedBeforeTag[i]);
+        if (idsOfDefectsAssignedBeforeTag.length > 0) {
+            this.numberOfAssignedDefectsBeforeTagged = idsOfDefectsAssignedBeforeTag.length;
+            for(var i=this.numberOfAssignedDefectsBeforeTagged-1; i>=0;i--){
+                this.doubleCheckTagOid(idsOfDefectsAssignedBeforeTag[i]);
             }
         }
     },
@@ -63,30 +63,28 @@ Ext.define('CustomApp', {
     },
     doubleCheckTagOid:function(oid){
         Ext.create('Rally.data.lookback.SnapshotStore', {
-            fetch: ['ObjectID','FormattedID','State','Project','Tags'],
+            fetch: ['ObjectID','FormattedID','Project','Tags'],
             find: {'ObjectID':oid,'_TypeHierarchy':'Defect','_ProjectHierarchy':this.projectOid,'__At':'current'},
-            hydrate: ['Project','State']
+            hydrate: ['Project']
         }).load({
                 callback: function(records, operation, success) {
                     if (records[0].data.Tags.length>0) {
                         if(this.checkTagOid(records[0].data.Tags)){
                             console.log('found cv tag', records[0].data.ObjectID, records[0].data.FormattedID); //this order is indeterminate. I saw 0, 2, 1, and 1, 2, 0
-                            this.openedDefects.push({
+                            this.assignedDefects.push({
                                 'ObjectID':records[0].data.ObjectID,
                                 'FormattedID':records[0].data.FormattedID,
-                                'OpenedOn':records[0].data._ValidFrom,
-                                'State':records[0].data.State
+                                'AssignedOn':records[0].data._ValidFrom,
+                                'AssignedTo':records[0].data.Project.Name
                             });
                         }
-                        else{
-                            console.log('no cv tag');
-                        }
+                        else{console.log('no cv tag');}
                     }
                     else{
                         console.log('no tags');
                     }
-                    this.numberOfDefectsOpenedBeforeTagged--;
-                    if (this.numberOfDefectsOpenedBeforeTagged === 0) {
+                    this.numberOfAssignedDefectsBeforeTagged--;
+                    if (this.numberOfAssignedDefectsBeforeTagged === 0) {
                         this.makeGrid();
                     }
                 },
@@ -99,19 +97,23 @@ Ext.define('CustomApp', {
         
     },
     makeGrid:function(){
-        console.log(this.openedDefects.length, 'CV tagged defect transitioned to Open from Submitted'); 
+        console.log(this.assignedDefects.length, 'CV tagged defects were moved to Engineering in August'); 
         this.add({
             xtype: 'rallygrid',
             showPagingToolbar: true,
             editable: false,
             store: Ext.create('Rally.data.custom.Store', {
-                data: this.openedDefects
+                data: this.assignedDefects,
+                sorter:[{
+                    property: 'FormattedID',
+                    direction: 'DESC'
+                }]
             }),
             columnCfgs: [
-                {text: 'ObjectID',dataIndex: 'ObjectID'},
                 {text: 'FormattedID',dataIndex: 'FormattedID'},
-                {text: 'Opened On',dataIndex: 'OpenedOn'},
-                {text: 'State',dataIndex: 'State'}
+                {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'Assigned To',dataIndex: 'AssignedTo'},
+                {text: 'Assigned On',dataIndex: 'AssignedOn',flex:1}
             ],
             width: 500
         });
