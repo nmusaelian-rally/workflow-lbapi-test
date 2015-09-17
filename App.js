@@ -184,6 +184,9 @@ Ext.define('CustomApp', {
         
     },
     makeGridOfAssignedDefects:function(){
+        this.assignedDefects = _.sortBy(this.assignedDefects, function(defect) {
+            return [defect.ObjectID];
+        });
         console.log(this.assignedDefects.length, 'CV tagged defects were moved to Engineering in August'); 
         this.down('#childPanel1').add({
             xtype: 'rallygrid',
@@ -198,16 +201,19 @@ Ext.define('CustomApp', {
                 }]
             }),
             columnCfgs: [
-                {text: 'FormattedID',dataIndex: 'FormattedID'},
                 {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'FormattedID',dataIndex: 'FormattedID'},
                 {text: 'Assigned To',dataIndex: 'AssignedTo',flex:1},
-                {text: 'Assigned On',dataIndex: 'AssignedOn',flex:1}
+                {text: 'Assigned On',dataIndex: 'AssignedOn',flex:2}
             ],
             width: 500
         });
         this.getOpenedDefects();
     },
     makeGridOfOpenedDefects:function(){
+        this.openedDefects = _.sortBy(this.openedDefects, function(defect) {
+            return [defect.ObjectID];
+        });
         this._myMask.hide();
         console.log(this.assignedDefects.length, 'CV tagged defects were moved to Engineering in August'); 
         this.down('#childPanel2').add({
@@ -223,8 +229,8 @@ Ext.define('CustomApp', {
                 }]
             }),
             columnCfgs: [
-                {text: 'FormattedID',dataIndex: 'FormattedID'},
                 {text: 'ObjectID',dataIndex: 'ObjectID'},
+                {text: 'FormattedID',dataIndex: 'FormattedID'},
                 {text: 'State set to Open',dataIndex: 'OpenedOn', flex:1}
             ],
             width: 500
